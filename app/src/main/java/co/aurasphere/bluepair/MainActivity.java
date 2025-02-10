@@ -23,16 +23,22 @@
  */
 package co.aurasphere.bluepair;
 
+import android.Manifest;
 import android.app.ProgressDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
+import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
@@ -62,6 +68,7 @@ import co.aurasphere.bluepair.view.RecyclerViewProgressEmptySupport;
  */
 public class MainActivity extends AppCompatActivity implements ListInteractionListener<BluetoothDevice> {
 
+    private static final int REQUEST_CODE_BLUETOOTH = 1;
     /**
      * Tag string used for logging.
      */
@@ -111,6 +118,8 @@ public class MainActivity extends AppCompatActivity implements ListInteractionLi
         MobileAds.initialize(this);
         this.adContainer = (LinearLayout) findViewById(R.id.ad_container);
         reloadAd();
+
+        checkAndRequestPermissions();
 
         // Sets up the RecyclerView.
         this.recyclerViewAdapter = new DeviceRecyclerViewAdapter(this);
@@ -171,6 +180,62 @@ public class MainActivity extends AppCompatActivity implements ListInteractionLi
                 }
             }
         });
+    }
+
+    private void checkAndRequestPermissions() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            // Android 12 (API 31) and above
+            String[] permissions = {
+                    Manifest.permission.BLUETOOTH_SCAN,
+                    Manifest.permission.BLUETOOTH_CONNECT
+            };
+
+            if (!hasPermissions(this, permissions)) {
+                ActivityCompat.requestPermissions(this, permissions, REQUEST_CODE_BLUETOOTH);
+            }
+        } else {
+            // Below Android 12 (API 30 and lower)
+            String[] permissions = {
+                    Manifest.permission.ACCESS_FINE_LOCATION // Needed for Bluetooth scanning
+            };
+
+            if (!hasPermissions(this, permissions)) {
+                ActivityCompat.requestPermissions(this, permissions, REQUEST_CODE_BLUETOOTH);
+            }
+        }
+    }
+
+    private boolean hasPermissions(Context context, String[] permissions) {
+        for (String permission : permissions) {
+            if (ContextCompat.checkSelfPermission(context, permission) != PackageManager.PERMISSION_GRANTED) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (requestCode == REQUEST_CODE_BLUETOOTH) {
+            boolean allGranted = true;
+            for (int grantResult : grantResults) {
+                if (grantResult != PackageManager.PERMISSION_GRANTED) {
+                    allGranted = false;
+                    break;
+                }
+            }
+
+            if (allGranted) {
+                Log.d("Permission", "Permissions granted");
+            } else {
+                Log.d("Permission", "Permissions denied");
+                Snackbar.make(findViewById(android.R.id.content),
+                        "Bluetooth permissions are required for discovery",
+                        Snackbar.LENGTH_LONG).show();
+            }
+        }
     }
 
     /**

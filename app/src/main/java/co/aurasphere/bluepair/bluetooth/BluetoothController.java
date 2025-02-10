@@ -80,7 +80,7 @@ public class BluetoothController implements Closeable {
      * @param context  the activity which is using this controller.
      * @param listener a callback for handling Bluetooth events.
      */
-    public BluetoothController(Activity context,BluetoothAdapter adapter, BluetoothDiscoveryDeviceListener listener) {
+    public BluetoothController(Activity context, BluetoothAdapter adapter, BluetoothDiscoveryDeviceListener listener) {
         this.context = context;
         this.bluetooth = adapter;
         this.broadcastReceiverDelegator = new BroadcastReceiverDelegator(context, listener, this);
@@ -100,16 +100,6 @@ public class BluetoothController implements Closeable {
      */
     public void startDiscovery() {
         broadcastReceiverDelegator.onDeviceDiscoveryStarted();
-
-        // This line of code is very important. In Android >= 6.0 you have to ask for the runtime
-        // permission as well in order for the discovery to get the devices ids. If you don't do
-        // this, the discovery won't find any device.
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(context,
-                    new String[]{Manifest.permission.ACCESS_COARSE_LOCATION},
-                    1);
-        }
 
         // If another discovery is in progress, cancels it before starting the new one.
         if (bluetooth.isDiscovering()) {
